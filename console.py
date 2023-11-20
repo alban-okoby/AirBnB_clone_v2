@@ -113,18 +113,42 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args):
-        """ Create an object of any class"""
-        if not args:
-            print("** class name missing **")
-            return
-        elif args not in HBNBCommand.classes:
-            print("** class doesn't exist **")
-            return
-        new_instance = HBNBCommand.classes[args]()
-        storage.save()
-        print(new_instance.id)
-        storage.save()
+    def do_create(self, arg):
+    """Usage: create <class name> <param 1> <param 2> <param 3>...
+    Creates a new instance of a class with the given parameters.
+    """
+    # Parse the command-line arguments using shlex
+    args = shlex.split(arg)
+
+    # Check if there are enough arguments
+    if len(args) < 1:
+        print("** class name missing **")
+        return
+
+    # Check if the class exists
+    class_name = args[0]
+    if class_name not in self.classes:
+        print("** class doesn't exist **")
+        return
+
+    # Create an instance of the specified class
+    new_instance = self.classes[class_name]()
+
+    # Parse and set parameters for the instance
+    param_pattern = re.compile(r'^(\w+)=(.*)$')
+    for param in args[1:]:
+        match = param_pattern.match(param)
+        if match:
+            key, value = match.groups()
+            # Replace underscores with spaces and unescape double quotes
+            value = value.replace('_', ' ').replace('\\"', '"')
+            setattr(new_instance, key, eval(value))
+        else:
+            print(f"Invalid parameter: {param}")
+
+    # Save the instance to the storage
+    storage.save()
+    print(new_instance.id)
 
     def help_create(self):
         """ Help information for the create method """
