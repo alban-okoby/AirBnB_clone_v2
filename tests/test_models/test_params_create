@@ -1,0 +1,79 @@
+#!/usr/bin/python3
+
+import unittest
+from unittest.mock import patch
+from io import StringIO
+import console
+from models.state import State
+from models.place import Place
+
+class TestConsoleCreate(unittest.TestCase):
+    def setUp(self):
+        self.console = console.HBNBCommand()
+
+    def test_create_state(self):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.console.onecmd('create State name="California"')
+            output = mock_stdout.getvalue().strip()
+
+        self.assertIn('State', output)
+        state_id = output.split()[3]
+
+        # Verify the State instance is created
+        state = console.storage.all()['State.' + state_id]
+        self.assertIsInstance(state, State)
+        self.assertEqual(state.name, 'California')
+
+    def test_create_multiple_states(self):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.console.onecmd('create State name="California"')
+            self.console.onecmd('create State name="Arizona"')
+            output = mock_stdout.getvalue().strip()
+
+        self.assertIn('State', output)
+
+        # Verify the State instances are created
+        state_ids = [line.split()[3] for line in output.split('\n')]
+        states = [console.storage.all()['State.' + state_id] for state_id in state_ids]
+        self.assertEqual(len(states), 2)
+        self.assertEqual(states[0].name, 'California')
+        self.assertEqual(states[1].name, 'Arizona')
+
+    def test_create_place(self):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.console.onecmd('create Place city_id="0001" user_id="0001" name="My_little_house" number_rooms=4 number_bathrooms=2 max_guest=10 price_by_night=300 latitude=37.773972 longitude=-122.431297')
+            output = mock_stdout.getvalue().strip()
+
+        self.assertIn('Place', output)
+        place_id = output.split()[3]
+
+        # Verify the Place instance is created
+        place = console.storage.all()['Place.' + place_id]
+        self.assertIsInstance(place, Place)
+        self.assertEqual(place.city_id, '0001')
+        self.assertEqual(place.user_id, '0001')
+        self.assertEqual(place.name, 'My little house')
+        self.assertEqual(place.number_rooms, 4)
+        self.assertEqual(place.number_bathrooms, 2)
+        self.assertEqual(place.max_guest, 10)
+        self.assertEqual(place.price_by_night, 300.0)
+        self.assertEqual(place.latitude, 37.773972)
+        self.assertEqual(place.longitude, -122.431297)
+
+    def test_all_states(self):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.console.onecmd('all State')
+            output = mock_stdout.getvalue().strip()
+
+        self.assertNotIn('** class doesn\'t exist **', output)
+
+    def test_all_places(self):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.console.onecmd('all Place')
+            output = mock_stdout.getvalue().strip()
+
+        self.assertNotIn('** class doesn\'t exist **', output)
+
+
+if __name__ == '__main__':
+    unittest.main()
