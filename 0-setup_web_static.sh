@@ -1,19 +1,40 @@
 #!/usr/bin/env bash
+# Sets up a web server for deployment of web_static.
 
-sudo apt-get update
-sudo apt-get -y install nginx
+apt-get update
+apt-get install -y nginx
 
-sudo mkdir -p data/web_static/releases/test
-sudo mkdir -p data/web_static/shared
+mkdir -p /data/web_static/{releases/test,shared}
+echo "Holberton School" > /data/web_static/releases/test/index.html
 
-echo "<html><head></head><body>Hello, this is a fake HTML file!</body></html>" | sudo tee data/web_static/releases/test/index.html > /dev/null
+# Create symbolic link
+ln -sf /data/web_static/releases/test/ /data/web_static/current
 
-# Create or recreate the symbolic link
-sudo ln -sf data/web_static/releases/test data/web_static/current
+chown -R ubuntu:ubuntu /data/
 
-sudo chown -R ubuntu:ubuntu /data/
+cat <<EOF > /etc/nginx/sites-available/default
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    add_header X-Served-By $HOSTNAME;
+    root   /var/www/html;
+    index  index.html index.htm;
 
-nginx_config="/etc/nginx/sites-available/default"
-sudo sed -i '/location \/hbnb_static {/ {N;s/\(\n.*alias.*\)\n/\1\n\t\talias \data\/web_static\/current\/;\n/}}' "$nginx_config"
+    location /hbnb_static {
+        alias /data/web_static/current;
+        index index.html index.htm;
+    }
+
+    location /redirect_me {
+        return 301 http://cuberule.com/;
+    }
+
+    error_page 404 /404.html;
+    location /404 {
+        root /var/www/html;
+        internal;
+    }
+}
+EOF
 
 service nginx restart
