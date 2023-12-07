@@ -1,27 +1,23 @@
-from fabric.api import local
+#!/usr/bin/python3
+# Fabfile to generate a .tgz archive
+import os.path
 from datetime import datetime
-import os
+from fabric.api import local, task
 
+@task
 def do_pack():
-    """
-    Generates a .tgz archive from the contents of the web_static folder
+    """Create a tar gzipped archive of the directory web_static"""
+    dt = datetime.utcnow()
+    archive_name = "web_static_{}{}{}{}{}{}.tgz".format(
+        dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+    )
+    archive_path = os.path.join("versions", archive_name)
 
-    Returns:
-        Archive path if successfully generated, None otherwise
-    """
-    try:
-        local("mkdir -p versions")
+    # Create the 'versions'
+    local("mkdir -p versions")
+    result = local("tar -cvzf {} web_static".format(archive_path), capture=True)
 
-        # Generate the archive
-        now = datetime.utcnow()
-        archive_name = "web_static_{}{}{}{}{}{}.tgz".format(
-            now.year, now.month, now.day, now.hour, now.minute, now.second
-        )
-        local("tar -cvzf versions/{} web_static".format(archive_name))
-
-        return os.path.join("versions", archive_name)
-
-    except Exception as e:
-        # Print the exception and return None
-        print("Error during archive creation: {}".format(e))
+    if result.failed:
         return None
+
+    return archive_path
